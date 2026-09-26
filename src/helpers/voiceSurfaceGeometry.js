@@ -6,5 +6,12 @@ const geometry = require("./voiceSurfaceGeometry.json");
 
 const ASSISTANT_PANEL_SIZE_LIMITS = Object.freeze(geometry.ASSISTANT_PANEL_SIZE_LIMITS);
 const LIVE_TRANSCRIPT_SURFACE_LIMITS = Object.freeze(geometry.LIVE_TRANSCRIPT_SURFACE_LIMITS);
+// How far above the pointer the follow-cursor pill floats (px). The main
+// process places the window with it; the settings store clamps input to it.
+const CURSOR_FOLLOW_OFFSET_LIMITS = Object.freeze(geometry.CURSOR_FOLLOW_OFFSET_LIMITS);
 
-module.exports = { ASSISTANT_PANEL_SIZE_LIMITS, LIVE_TRANSCRIPT_SURFACE_LIMITS };
+module.exports = {
+  ASSISTANT_PANEL_SIZE_LIMITS,
+  LIVE_TRANSCRIPT_SURFACE_LIMITS,
+  CURSOR_FOLLOW_OFFSET_LIMITS,
+};

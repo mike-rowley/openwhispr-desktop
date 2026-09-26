@@ -1048,6 +1048,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // Panel start position
   notifyPanelStartPositionChanged: (position) =>
     ipcRenderer.send("panel-start-position-changed", position),
+  notifyCursorFollowOffsetChanged: (offset) =>
+    ipcRenderer.send("cursor-follow-offset-changed", offset),
 
   // Start minimized
   notifyStartMinimizedChanged: (enabled) => ipcRenderer.send("start-minimized-changed", enabled),

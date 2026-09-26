@@ -1875,7 +1875,10 @@
         "startPositionDescription": "Onde o painel de gravação de voz aparece na tela",
         "bottomRight": "Inferior direito",
         "center": "Inferior central",
-        "bottomLeft": "Inferior esquerdo"
+        "bottomLeft": "Inferior esquerdo",
+        "followCursor": "Seguir o cursor",
+        "cursorOffset": "Distância acima do cursor",
+        "cursorOffsetDescription": "A que distância acima do ponteiro o ícone flutua enquanto você dita, em pixels"
       },
       "hotkey": {
         "activationMode": "Modo de ativação",

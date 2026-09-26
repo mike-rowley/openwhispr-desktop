@@ -149,6 +149,14 @@ export function resolveVoiceHorizontalDirection(panelStartPosition) {
   return panelStartPosition === "bottom-left" ? "left" : "right";
 }
 
+/**
+ * Follow-cursor rests the pill bottom-center in its window, like "center";
+ * the main process then moves the whole window to sit above the pointer.
+ */
+export function usesCenterDock(panelStartPosition) {
+  return panelStartPosition === "center" || panelStartPosition === "follow-cursor";
+}
+
 export function resolveVoicePillDock({
   liveTranscriptOpen,
   liveTranscriptEntrancePhase,
@@ -167,7 +175,7 @@ export function resolveVoicePillDock({
     return "live-transcript-bottom-left";
   }
   if (assistantOpen) return `assistant-bottom-${horizontalDirection}`;
-  if (panelStartPosition === "center") return "center";
+  if (usesCenterDock(panelStartPosition)) return "center";
   return `bottom-${horizontalDirection}`;
 }
 

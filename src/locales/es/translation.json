@@ -1949,7 +1949,10 @@
         "startPositionDescription": "Dónde aparece el panel de grabación de voz en la pantalla",
         "bottomRight": "Inferior derecha",
         "center": "Inferior centro",
-        "bottomLeft": "Inferior izquierda"
+        "bottomLeft": "Inferior izquierda",
+        "followCursor": "Seguir el cursor",
+        "cursorOffset": "Distancia sobre el cursor",
+        "cursorOffsetDescription": "Cuántos píxeles por encima del puntero flota el icono mientras dictas"
       },
       "hotkey": {
         "activationMode": "Modo de activación",

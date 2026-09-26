@@ -4,3 +4,4 @@ export const ASSISTANT_PANEL_SIZE_LIMITS = Object.freeze(geometry.ASSISTANT_PANE
 export const LIVE_TRANSCRIPT_SURFACE_LIMITS = Object.freeze(
   geometry.LIVE_TRANSCRIPT_SURFACE_LIMITS
 );
+export const CURSOR_FOLLOW_OFFSET_LIMITS = Object.freeze(geometry.CURSOR_FOLLOW_OFFSET_LIMITS);

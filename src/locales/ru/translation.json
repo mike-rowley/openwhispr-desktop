@@ -1900,7 +1900,10 @@
         "startPositionDescription": "Где на экране появляется панель записи голоса",
         "bottomRight": "Внизу справа",
         "center": "Внизу по центру",
-        "bottomLeft": "Внизу слева"
+        "bottomLeft": "Внизу слева",
+        "followCursor": "Следовать за курсором",
+        "cursorOffset": "Расстояние над курсором",
+        "cursorOffsetDescription": "На сколько пикселей выше указателя мыши держится значок во время диктовки"
       },
       "hotkey": {
         "activationMode": "Режим активации",

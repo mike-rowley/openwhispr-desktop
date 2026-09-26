@@ -51,14 +51,16 @@ export function UploadTranscriptionPanel() {
     isModeAllowed,
   } = usePolicyModeOptions<InferenceModeOption>(
     [
-      {
-        id: "openwhispr",
-        label: t("settingsPage.transcription.modes.openwhispr"),
-        description: t("settingsPage.transcription.modes.openwhisprDesc"),
-        icon: <Cloud className="w-4 h-4" />,
-        disabled: !isSignedIn,
-        badge: !isSignedIn ? t("common.freeAccountRequired") : undefined,
-      },
+      ...(isSignedIn
+        ? [
+            {
+              id: "openwhispr" as const,
+              label: t("settingsPage.transcription.modes.openwhispr"),
+              description: t("settingsPage.transcription.modes.openwhisprDesc"),
+              icon: <Cloud className="w-4 h-4" />,
+            },
+          ]
+        : []),
       {
         id: "providers",
         label: t("settingsPage.transcription.modes.providers"),

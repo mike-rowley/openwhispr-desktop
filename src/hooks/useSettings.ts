@@ -405,6 +405,8 @@ function useSettingsInternal() {
     setStartMinimized: store.setStartMinimized,
     panelStartPosition: store.panelStartPosition,
     setPanelStartPosition: store.setPanelStartPosition,
+    cursorFollowOffset: store.cursorFollowOffset,
+    setCursorFollowOffset: store.setCursorFollowOffset,
     microphoneSelectionMode: store.microphoneSelectionMode,
     preferBuiltInMic: store.preferBuiltInMic,
     selectedMicDeviceId: store.selectedMicDeviceId,

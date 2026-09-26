@@ -45,6 +45,7 @@ import {
   shouldActivateVoicePill,
   shouldOfferLiveTranscriptReopen,
   shouldSuppressPillForAssistantActions,
+  usesCenterDock,
 } from "./helpers/voicePillPresentation";
 
 const formatPillHotkeyLabel = (value) =>
@@ -597,8 +598,9 @@ export default function App() {
     panelStartPosition,
     horizontalDirection: voiceHorizontalDirection,
   });
-  const voicePillPopoverAlign =
-    panelStartPosition === "center" ? "center" : voiceHorizontalDirection;
+  const voicePillPopoverAlign = usesCenterDock(panelStartPosition)
+    ? "center"
+    : voiceHorizontalDirection;
   const voicePillTravelDuration =
     liveTranscript.open && liveTranscript.entrancePhase === "encapsulate"
       ? LIVE_TRANSCRIPT_ENTRANCE_TIMING.encapsulateMs

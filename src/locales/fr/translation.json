@@ -2188,6 +2188,9 @@
         "bottomRight": "En bas à droite",
         "center": "En bas au centre",
         "bottomLeft": "En bas à gauche",
+        "followCursor": "Suivre le curseur",
+        "cursorOffset": "Distance au-dessus du curseur",
+        "cursorOffsetDescription": "À quelle distance au-dessus du pointeur l'icône flotte pendant la dictée, en pixels",
         "description": "Contrôlez quand l'icône de dictée est visible à l'écran",
         "title": "Icône flottante"
       },

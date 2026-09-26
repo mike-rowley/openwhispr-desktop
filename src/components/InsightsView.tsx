@@ -449,9 +449,12 @@ export default function InsightsView({ onSignIn }: InsightsViewProps) {
             <TabsTrigger value="usage" className="h-6 px-2.5 text-xs rounded-[5px]">
               {t("insights.yourUsage")}
             </TabsTrigger>
-            <TabsTrigger value="leaderboard" className="h-6 px-2.5 text-xs rounded-[5px]">
-              {t("insights.leaderboard.title")}
-            </TabsTrigger>
+            {/* Signed out, the leaderboard is only a sign-in teaser; this fork hides it. */}
+            {isSignedIn && (
+              <TabsTrigger value="leaderboard" className="h-6 px-2.5 text-xs rounded-[5px]">
+                {t("insights.leaderboard.title")}
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {activeTab === "usage" ? (

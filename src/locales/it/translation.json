@@ -1896,7 +1896,10 @@
         "startPositionDescription": "Dove appare il pannello di registrazione vocale sullo schermo",
         "bottomRight": "In basso a destra",
         "center": "In basso al centro",
-        "bottomLeft": "In basso a sinistra"
+        "bottomLeft": "In basso a sinistra",
+        "followCursor": "Segui il cursore",
+        "cursorOffset": "Distanza sopra il cursore",
+        "cursorOffsetDescription": "Quanto sopra il puntatore resta l'icona mentre detti, in pixel"
       },
       "hotkey": {
         "activationMode": "Modalità di attivazione",

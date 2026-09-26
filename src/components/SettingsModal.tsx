@@ -39,6 +39,12 @@ const SECTION_ALIASES: Record<string, SettingsSectionType> = {
   developer: "system",
 };
 
+// Signed out, this fork hides the whole account group: until there is an
+// account it holds nothing but sign-up, trial and plan prompts. Anything that
+// asks for one of these sections (an old "View Plans" deep link) lands on
+// General instead, which is also where Settings opens by default.
+const ACCOUNT_ONLY_SECTIONS = new Set<string>(["account", "plansBilling", "workspace"]);
+
 const LEGACY_SUB_TAB: Record<string, string> = {
   transcription: "dictation",
   uploadTranscription: "upload",
@@ -127,12 +133,12 @@ export default function SettingsModal({ open, onOpenChange, initialSection }: Se
         group: t("settingsModal.groups.system"),
       },
     ];
-    return isSignedIn ? items : items.filter((item) => item.id !== "workspace");
+    return isSignedIn ? items : items.filter((item) => !ACCOUNT_ONLY_SECTIONS.has(item.id));
   }, [t, isSignedIn]);
 
   const resolveSection = (section: string | undefined): SettingsSectionType => {
-    if (!section) return "account";
-    return (SECTION_ALIASES[section] ?? section) as SettingsSectionType;
+    const resolved = (section ? (SECTION_ALIASES[section] ?? section) : "general") as SettingsSectionType;
+    return !isSignedIn && ACCOUNT_ONLY_SECTIONS.has(resolved) ? "general" : resolved;
   };
 
   const [activeSection, setActiveSection] = React.useState<SettingsSectionType>(() =>

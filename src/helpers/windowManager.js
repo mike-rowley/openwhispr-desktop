@@ -26,6 +26,12 @@ const {
 } = require("./dictationLifecycle");
 const { DEV_SERVER_PORT } = DevServerManager;
 const DRAG_MOVE_TOLERANCE_PX = 2;
+// ~60 Hz: smooth enough to read as attached to the pointer, and each tick is
+// a no-op unless the pointer actually moved.
+const CURSOR_FOLLOW_INTERVAL_MS = 16;
+// Fractional display scaling (105%, 157.5%, ...) rounds the 208×120 pill
+// window to 209×121 or 210×121, so "still the bare pill" allows a few pixels.
+const PILL_SIZE_TOLERANCE_PX = 4;
 const {
   MAIN_WINDOW_CONFIG,
   CONTROL_PANEL_CONFIG,
@@ -39,6 +45,7 @@ const {
   WINDOW_SIZES,
   WindowPositionUtil,
 } = require("./windowConfig");
+const { CURSOR_FOLLOW_OFFSET_LIMITS } = require("./voiceSurfaceGeometry");
 const AGENT_DICTATION_PILL_SIZE = Object.freeze({ ...WINDOW_SIZES.BASE });
 const { centeredBounds, clampedBounds } = require("./onboardingWindowBounds");
 const { ONBOARDING_DEMO_KINDS, isOnboardingInputAllowed } = require("./onboardingInputPolicy");
@@ -78,7 +85,9 @@ class WindowManager {
     });
     this.notificationPrefs = {
       notificationsEnabled: true,
-      notifyMeetingDetection: true,
+      // Matches the fork's renderer default (settingsStore), so no meeting
+      // prompt can fire before the renderer syncs its preferences.
+      notifyMeetingDetection: false,
       notifyCalendarReminders: true,
     };
     this.tray = null;
@@ -92,6 +101,11 @@ class WindowManager {
     this._cachedActivationMode = "tap";
     this._floatingIconAutoHide = false;
     this._panelStartPosition = "bottom-right";
+    this._followCursor = false;
+    this._cursorFollowOffset = CURSOR_FOLLOW_OFFSET_LIMITS.default;
+    this._cursorFollowTimer = null;
+    this._cursorFollowMovePending = false;
+    this._lastFollowedCursor = null;
     this._activeHorizontalDirection = null;
     this._isDictatingToggle = false;
     this._dictationLifecycleState = DICTATION_LIFECYCLE.IDLE;
@@ -103,6 +117,7 @@ class WindowManager {
 
     app.on("before-quit", () => {
       this.isQuitting = true;
+      this._stopCursorFollow();
       this.hotkeyManager.unregisterAll();
     });
   }
@@ -963,6 +978,7 @@ class WindowManager {
     this._isDictatingToggle = isDictationRecording(nextState);
     this.meetingDetectionEngine?.setUserRecording(this._isDictatingToggle);
     this._sendAgentDictationPillState();
+    this._syncCursorFollow();
     this.onDictationStateChanged?.();
   }
 
@@ -1159,7 +1175,11 @@ class WindowManager {
   }
 
   setPanelStartPosition(position) {
-    this._panelStartPosition = position || "bottom-right";
+    // Follow-cursor docks the pill bottom-center exactly like "center"; only
+    // where the window sits differs. Every anchor, resize and direction path
+    // therefore keeps seeing "center", and the follow loop below owns placement.
+    this._followCursor = position === "follow-cursor";
+    this._panelStartPosition = this._followCursor ? "center" : position || "bottom-right";
     this._mainWindowPlacementCoordinator.resetManualPosition();
     this._activeHorizontalDirection = null;
     // Reposition the window immediately
@@ -1175,6 +1195,111 @@ class WindowManager {
       this.mainWindow.setBounds(newPos);
       this._notifyMainWindowHorizontalDirection();
     }
+    this._syncCursorFollow();
+  }
+
+  setCursorFollowOffset(offset) {
+    const { min, max, default: fallback } = CURSOR_FOLLOW_OFFSET_LIMITS;
+    const numeric = typeof offset === "number" ? offset : Number.parseInt(offset, 10);
+    this._cursorFollowOffset = Number.isFinite(numeric)
+      ? Math.min(max, Math.max(min, Math.round(numeric)))
+      : fallback;
+    // Re-place on the next tick even if the pointer hasn't moved.
+    this._lastFollowedCursor = null;
+  }
+
+  getCursorFollowOffset() {
+    return this._cursorFollowOffset;
+  }
+
+  // The pill only chases the pointer while a dictation is live. An idle pill
+  // that fled the pointer could never be clicked, and with auto-hide on it is
+  // hidden between dictations anyway.
+  _syncCursorFollow() {
+    const shouldFollow =
+      this._followCursor &&
+      this._dictationLifecycleState !== DICTATION_LIFECYCLE.IDLE &&
+      Boolean(this.mainWindow) &&
+      !this.mainWindow.isDestroyed() &&
+      this.mainWindow.isVisible();
+
+    if (!shouldFollow) {
+      this._stopCursorFollow();
+      return;
+    }
+    if (this._cursorFollowTimer) return;
+
+    this._lastFollowedCursor = null;
+    this._clearRendererResizeMask();
+    this._cursorFollowTimer = setInterval(
+      () => this._followCursorTick(),
+      CURSOR_FOLLOW_INTERVAL_MS
+    );
+    this._followCursorTick();
+  }
+
+  _stopCursorFollow() {
+    if (this._cursorFollowTimer) clearInterval(this._cursorFollowTimer);
+    this._cursorFollowTimer = null;
+    this._lastFollowedCursor = null;
+  }
+
+  _followCursorTick() {
+    // One queued move at a time: a resize holding the queue (it waits on the
+    // renderer's mask ack) must not come back to a backlog of stale moves.
+    if (!this._cursorFollowTimer || this._cursorFollowMovePending) return;
+    if (!this.mainWindow || this.mainWindow.isDestroyed() || !this.mainWindow.isVisible()) return;
+
+    const cursor = screen.getCursorScreenPoint();
+    const last = this._lastFollowedCursor;
+    if (last && last.x === cursor.x && last.y === cursor.y) return;
+
+    this._cursorFollowMovePending = true;
+    void this._enqueueMainWindowMutation(() => {
+      this._cursorFollowMovePending = false;
+      // The dictation may have ended while this move waited in the queue.
+      if (!this._cursorFollowTimer) return;
+      // Sampled again here: a resize ahead in the queue can hold this move
+      // back, and ticks are dropped meanwhile, so only the pointer's position
+      // at the moment of the move is current.
+      const latest = screen.getCursorScreenPoint();
+      if (this._moveMainWindowToCursor(latest)) this._lastFollowedCursor = latest;
+    });
+  }
+
+  // Only the bare pill follows. A grown window (menu, toast, error card,
+  // assistant panel) or a drag in progress owns its own geometry until it
+  // shrinks back to the pill.
+  _moveMainWindowToCursor(cursor = screen.getCursorScreenPoint()) {
+    if (!this.mainWindow || this.mainWindow.isDestroyed()) return false;
+    if (this._assistantPanelOpen || this._assistantPanelBusy || this.dragManager.isDragActive()) {
+      return false;
+    }
+    const bounds = this.mainWindow.getBounds();
+    const { BASE } = WINDOW_SIZES;
+    if (
+      Math.abs(bounds.width - BASE.width) > PILL_SIZE_TOLERANCE_PX ||
+      Math.abs(bounds.height - BASE.height) > PILL_SIZE_TOLERANCE_PX
+    ) {
+      return false;
+    }
+
+    // Always the canonical size: feeding the rounded size back in would let
+    // the window creep a pixel at a time across moves.
+    const next = WindowPositionUtil.getCursorFollowPosition(
+      cursor,
+      screen.getDisplayNearestPoint(cursor),
+      BASE,
+      this._cursorFollowOffset
+    );
+    if (next.x !== bounds.x || next.y !== bounds.y) {
+      this.mainWindow.setBounds(next);
+    }
+    // An intentional move, not a drag: keep the resize path from treating it
+    // as the user taking ownership of the pill's position.
+    this._lastResizeBounds = { ...next };
+    this._baseBoundsBeforeResize = null;
+    return true;
   }
 
   setHotkeyListeningMode(enabled) {
@@ -1553,7 +1678,13 @@ class WindowManager {
       if (focus) this.mainWindow.focus();
       return;
     }
-    if (reposition) {
+    if (reposition && this._followCursor) {
+      // Placed synchronously, before the window is shown, so the pill appears
+      // at the pointer rather than flashing at its last spot and jumping.
+      this._mainWindowPlacementCoordinator.cancelPending();
+      this._clearRendererResizeMask();
+      this._moveMainWindowToCursor();
+    } else if (reposition) {
       void this._repositionToActiveDisplay(targetPidPromise);
     }
     if (this.mainWindow.isMinimized()) {
@@ -1569,6 +1700,11 @@ class WindowManager {
     if (focus) {
       this.mainWindow.focus();
     }
+    // Windows can drop a move made while a window was hidden: the first show
+    // of a never-shown window lands at its old spot. Placing again once it is
+    // visible is a no-op when the first move held.
+    if (reposition && this._followCursor) this._moveMainWindowToCursor();
+    this._syncCursorFollow();
   }
 
   setOnboardingActive(active) {
@@ -1781,6 +1917,7 @@ class WindowManager {
     if (this._assistantPanelOpen || this._assistantPanelBusy) return;
     this._mainWindowPlacementCoordinator.cancelPending();
     if (this.mainWindow && !this.mainWindow.isDestroyed()) this.mainWindow.hide();
+    this._syncCursorFollow();
   }
 
   positionAgentDictationPill() {

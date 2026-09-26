@@ -1,6 +1,9 @@
 const path = require("path");
 const { getLinuxSessionInfo } = require("./linuxSession");
-const { ASSISTANT_PANEL_SIZE_LIMITS } = require("./voiceSurfaceGeometry");
+const {
+  ASSISTANT_PANEL_SIZE_LIMITS,
+  CURSOR_FOLLOW_OFFSET_LIMITS,
+} = require("./voiceSurfaceGeometry");
 
 const FOCUSLESS_OVERLAY_ROLES = new Set(["main", "notification"]);
 
@@ -135,6 +138,12 @@ function fitDictationErrorWindowToWorkArea(requestedSize, workArea) {
 // src/helpers/voicePillPresentation.js — the renderer-side half of this
 // contract, and the only place they are defined.
 const PILL_WINDOW_SIZE = { width: 208, height: 120 };
+// The 12px dock inset above, as a number, plus the tallest pill footprint
+// (VOICE_PILL_FOOTPRINT.idle) and a typical arrow pointer's height. Only the
+// follow-cursor placement needs to know where inside the window the pill is.
+const PILL_DOCK_INSET = 12;
+const PILL_MAX_HEIGHT = 40;
+const POINTER_HEIGHT = 20;
 
 const WINDOW_SIZES = {
   // BASE and RECORDING are deliberately the same box. Resizing a transparent
@@ -307,6 +316,33 @@ class WindowPositionUtil {
     // Clamped to the display's own work area, never to zero: a monitor placed
     // above or left of the primary one has a negative origin, so flooring at zero
     // lands the window on a coordinate that display doesn't cover.
+    return {
+      ...WindowPositionUtil.clampToWorkArea({ x, y, width, height }, display),
+      width,
+      height,
+    };
+  }
+
+  // Places a center-docked pill window so the pill floats `offset` px above the
+  // pointer, centered on it. Too close to the top of the work area there is no
+  // room above, so the pill hangs below the pointer instead of sliding under it.
+  static getCursorFollowPosition(
+    cursor,
+    display,
+    customSize = null,
+    offset = CURSOR_FOLLOW_OFFSET_LIMITS.default
+  ) {
+    const { width, height } = customSize || WINDOW_SIZES.BASE;
+    const workArea = display.workArea || display.bounds;
+    const pillBottomFromTop = height - PILL_DOCK_INSET;
+
+    const x = Math.round(cursor.x - width / 2);
+    let y = Math.round(cursor.y - offset - pillBottomFromTop);
+    if (y < workArea.y) {
+      const pillTop = cursor.y + POINTER_HEIGHT + offset;
+      y = Math.round(pillTop - (pillBottomFromTop - PILL_MAX_HEIGHT));
+    }
+
     return {
       ...WindowPositionUtil.clampToWorkArea({ x, y, width, height }, display),
       width,

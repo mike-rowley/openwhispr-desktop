@@ -10,5 +10,10 @@
   "LIVE_TRANSCRIPT_SURFACE_LIMITS": {
     "minHeight": 152,
     "maxHeight": 538
+  },
+  "CURSOR_FOLLOW_OFFSET_LIMITS": {
+    "min": 0,
+    "max": 200,
+    "default": 30
   }
 }

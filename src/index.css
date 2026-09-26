@@ -18,6 +18,8 @@
   --color-accent-foreground: #ffffff;
   /* Agent Mode identity, sourced from the supplied sparkle/leaf mark. */
   --color-agent-brand: #8787ff;
+  /* The dictation pill's contents (logo, waveform). One value for both themes. */
+  --color-voice-pill: #ffa600;
   --color-destructive: #dc2626;
   --color-destructive-foreground: #ffffff;
   --color-border: #e5e5e5;

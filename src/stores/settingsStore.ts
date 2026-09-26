@@ -5,6 +5,7 @@ import { ensureAgentNameInDictionary } from "../utils/agentName";
 import { chooseDictionaryStartupAction } from "../helpers/dictionaryStartup";
 import logger from "../utils/logger";
 import whisperVadConstants from "../constants/whisperVad.json";
+import { CURSOR_FOLLOW_OFFSET_LIMITS } from "../helpers/voiceSurfaceGeometry.mjs";
 import type {
   ChineseScriptPreference,
   LocalTranscriptionProvider,
@@ -216,6 +217,21 @@ export const MIC_WARM_HOLD_CHOICES = [0, 10, 60, 900] as const;
 
 function snapMicWarmHold(value: number): number {
   return (MIC_WARM_HOLD_CHOICES as readonly number[]).includes(value) ? value : 0;
+}
+
+export type PanelStartPosition = "bottom-right" | "center" | "bottom-left" | "follow-cursor";
+
+const PANEL_START_POSITIONS: readonly PanelStartPosition[] = [
+  "bottom-right",
+  "center",
+  "bottom-left",
+  "follow-cursor",
+];
+
+function clampCursorFollowOffset(value: number): number {
+  const { min, max, default: fallback } = CURSOR_FOLLOW_OFFSET_LIMITS;
+  if (!Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(min, Math.round(value)));
 }
 
 function readStringArray(key: string, fallback: string[]): string[] {
@@ -908,7 +924,8 @@ export interface SettingsState
   whisperVadMaxSpeechDurationS: number;
   whisperVadSpeechPadMs: number;
   whisperVadSamplesOverlap: number;
-  panelStartPosition: "bottom-right" | "center" | "bottom-left";
+  panelStartPosition: PanelStartPosition;
+  cursorFollowOffset: number;
   showTranscriptionPreview: boolean;
   autoPasteEnabled: boolean;
   keepTranscriptionInClipboard: boolean;
@@ -1221,7 +1238,8 @@ export interface SettingsState
   setWhisperVadMaxSpeechDurationS: (value: number) => void;
   setWhisperVadSpeechPadMs: (value: number) => void;
   setWhisperVadSamplesOverlap: (value: number) => void;
-  setPanelStartPosition: (position: "bottom-right" | "center" | "bottom-left") => void;
+  setPanelStartPosition: (position: PanelStartPosition) => void;
+  setCursorFollowOffset: (offset: number) => void;
   setShowTranscriptionPreview: (value: boolean) => void;
   setAutoPasteEnabled: (value: boolean) => void;
   setKeepTranscriptionInClipboard: (value: boolean) => void;
@@ -1624,7 +1642,9 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   floatingIconAutoHide: readBoolean("floatingIconAutoHide", false),
   startMinimized: readBoolean("startMinimized", false),
   notificationsEnabled: readBoolean("notificationsEnabled", true),
-  notifyMeetingDetection: readBoolean("notifyMeetingDetection", true),
+  // Off by default in this fork: the "Meeting detected — take notes?" prompt
+  // fires on every call. Settings → Notifications turns it back on.
+  notifyMeetingDetection: readBoolean("notifyMeetingDetection", false),
   notifyCalendarReminders: readBoolean("notifyCalendarReminders", true),
   autoUpdatesEnabled: readBoolean("autoUpdatesEnabled", true),
   ...(() => {
@@ -1684,9 +1704,13 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   ),
   panelStartPosition: (() => {
     const v = readString("panelStartPosition", "bottom-right");
-    if (v === "bottom-right" || v === "center" || v === "bottom-left") return v;
-    return "bottom-right" as const;
+    return (PANEL_START_POSITIONS as readonly string[]).includes(v)
+      ? (v as PanelStartPosition)
+      : "bottom-right";
   })(),
+  cursorFollowOffset: clampCursorFollowOffset(
+    readNumber("cursorFollowOffset", CURSOR_FOLLOW_OFFSET_LIMITS.default)
+  ),
   showTranscriptionPreview: readBoolean("showTranscriptionPreview", false),
   autoPasteEnabled: readBoolean("autoPasteEnabled", true),
   keepTranscriptionInClipboard: readBoolean("keepTranscriptionInClipboard", false),
@@ -2521,12 +2545,21 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       window.electronAPI?.setWhisperVadConfig?.({ samplesOverlap: next });
     }
   },
-  setPanelStartPosition: (position: "bottom-right" | "center" | "bottom-left") => {
+  setPanelStartPosition: (position: PanelStartPosition) => {
     if (get().panelStartPosition === position) return;
     if (isBrowser) localStorage.setItem("panelStartPosition", position);
     set({ panelStartPosition: position });
     if (isBrowser) {
       window.electronAPI?.notifyPanelStartPositionChanged?.(position);
+    }
+  },
+  setCursorFollowOffset: (offset: number) => {
+    const next = clampCursorFollowOffset(offset);
+    if (get().cursorFollowOffset === next) return;
+    if (isBrowser) localStorage.setItem("cursorFollowOffset", String(next));
+    set({ cursorFollowOffset: next });
+    if (isBrowser) {
+      window.electronAPI?.notifyCursorFollowOffsetChanged?.(next);
     }
   },
 

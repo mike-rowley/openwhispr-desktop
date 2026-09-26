@@ -2188,6 +2188,9 @@
         "bottomRight": "Unten rechts",
         "center": "Unten Mitte",
         "bottomLeft": "Unten links",
+        "followCursor": "Dem Mauszeiger folgen",
+        "cursorOffset": "Abstand über dem Mauszeiger",
+        "cursorOffsetDescription": "Wie weit das Symbol beim Diktieren über dem Mauszeiger schwebt, in Pixeln",
         "description": "Steuern Sie, wann das Diktat-Symbol auf Ihrem Bildschirm sichtbar ist",
         "title": "Schwebendes Symbol"
       },

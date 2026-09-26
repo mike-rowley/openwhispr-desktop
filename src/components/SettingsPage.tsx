@@ -125,10 +125,12 @@ import { syncService } from "../services/SyncService.js";
 import { formatBytes } from "../utils/formatBytes";
 import {
   clearMissingLocalModelSelections,
+  type PanelStartPosition,
   TRANSCRIPTION_ENTERPRISE_POLICY_PROVIDER_IDS,
   TRANSCRIPTION_POLICY_PROVIDER_IDS,
   useSettingsStore,
 } from "../stores/settingsStore";
+import { CURSOR_FOLLOW_OFFSET_LIMITS } from "../helpers/voiceSurfaceGeometry.mjs";
 import { useWorkspaceStore } from "../stores/workspaceStore";
 import { highestPlan } from "../lib/usageStore";
 import { decideProPlanCardCta } from "../lib/upsell";
@@ -568,14 +570,18 @@ function TranscriptionSection({
     isModeAllowed,
   } = usePolicyModeOptions<InferenceModeOption>(
     [
-      {
-        id: "openwhispr",
-        label: t("settingsPage.transcription.modes.openwhispr"),
-        description: t("settingsPage.transcription.modes.openwhisprDesc"),
-        icon: <Cloud className="w-4 h-4" />,
-        disabled: !isSignedIn,
-        badge: !isSignedIn ? t("common.freeAccountRequired") : undefined,
-      },
+      // Signed out, this fork leaves OpenWhispr Cloud out rather than offering
+      // a card whose click reloads the app into the sign-in screen.
+      ...(isSignedIn
+        ? [
+            {
+              id: "openwhispr" as const,
+              label: t("settingsPage.transcription.modes.openwhispr"),
+              description: t("settingsPage.transcription.modes.openwhisprDesc"),
+              icon: <Cloud className="w-4 h-4" />,
+            },
+          ]
+        : []),
       {
         id: "providers",
         label: t("settingsPage.transcription.modes.providers"),
@@ -1252,6 +1258,8 @@ export default function SettingsPage({
     setStartMinimized,
     panelStartPosition,
     setPanelStartPosition,
+    cursorFollowOffset,
+    setCursorFollowOffset,
     cloudBackupEnabled,
     setCloudBackupEnabled,
     insightsSyncEnabled,
@@ -3285,9 +3293,7 @@ export default function SettingsPage({
                     <select
                       value={panelStartPosition}
                       onChange={(e) =>
-                        setPanelStartPosition(
-                          e.target.value as "bottom-right" | "center" | "bottom-left"
-                        )
+                        setPanelStartPosition(e.target.value as PanelStartPosition)
                       }
                       className="h-7 rounded border border-border/70 bg-surface-1/80 px-2.5 text-xs font-medium text-foreground shadow-sm backdrop-blur-sm hover:border-border-hover hover:bg-surface-2/70 focus:outline-none focus:ring-2 focus:ring-ring/30 focus:ring-offset-1 transition-colors duration-200"
                     >
@@ -3300,9 +3306,31 @@ export default function SettingsPage({
                       <option value="bottom-left">
                         {t("settingsPage.general.floatingIcon.bottomLeft")}
                       </option>
+                      <option value="follow-cursor">
+                        {t("settingsPage.general.floatingIcon.followCursor")}
+                      </option>
                     </select>
                   </SettingsRow>
                 </SettingsPanelRow>
+                {panelStartPosition === "follow-cursor" && (
+                  <SettingsPanelRow>
+                    <SettingsRow
+                      label={t("settingsPage.general.floatingIcon.cursorOffset")}
+                      description={t("settingsPage.general.floatingIcon.cursorOffsetDescription")}
+                    >
+                      <Input
+                        dir="ltr"
+                        type="number"
+                        step="1"
+                        min={CURSOR_FOLLOW_OFFSET_LIMITS.min}
+                        max={CURSOR_FOLLOW_OFFSET_LIMITS.max}
+                        value={cursorFollowOffset}
+                        onChange={(e) => setCursorFollowOffset(Number(e.target.value))}
+                        className="h-7 w-20 text-xs"
+                      />
+                    </SettingsRow>
+                  </SettingsPanelRow>
+                )}
               </SettingsPanel>
             </div>
 

@@ -2188,6 +2188,9 @@
         "bottomRight": "Bottom Right",
         "center": "Bottom Center",
         "bottomLeft": "Bottom Left",
+        "followCursor": "Follow Cursor",
+        "cursorOffset": "Distance above cursor",
+        "cursorOffsetDescription": "How far above the mouse pointer the icon floats while you dictate, in pixels",
         "description": "Control when the dictation icon is visible on your screen",
         "title": "Floating Icon"
       },

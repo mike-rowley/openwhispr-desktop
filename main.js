@@ -1038,6 +1038,7 @@ async function startApp() {
   await windowManager.setActivationModeCache(environmentManager.getActivationMode());
   windowManager.setFloatingIconAutoHide(environmentManager.getFloatingIconAutoHide());
   windowManager.setPanelStartPosition(environmentManager.getPanelStartPosition());
+  windowManager.setCursorFollowOffset(environmentManager.getCursorFollowOffset());
 
   let activationModeChangeQueue = Promise.resolve();
   ipcMain.on("activation-mode-changed", (_event, mode) => {
@@ -1082,6 +1083,11 @@ async function startApp() {
   ipcMain.on("panel-start-position-changed", (_event, position) => {
     windowManager.setPanelStartPosition(position);
     environmentManager.savePanelStartPosition(position);
+  });
+
+  ipcMain.on("cursor-follow-offset-changed", (_event, offset) => {
+    windowManager.setCursorFollowOffset(offset);
+    environmentManager.saveCursorFollowOffset(windowManager.getCursorFollowOffset());
   });
 
   dockManager.init();

@@ -1896,7 +1896,10 @@
         "startPositionDescription": "語音錄製面板在螢幕上的顯示位置",
         "bottomRight": "右下角",
         "center": "底部置中",
-        "bottomLeft": "左下角"
+        "bottomLeft": "左下角",
+        "followCursor": "跟隨游標",
+        "cursorOffset": "游標上方距離",
+        "cursorOffsetDescription": "聽寫時圖示懸浮在滑鼠指標上方的距離（像素）"
       },
       "hotkey": {
         "activationMode": "啟用模式",

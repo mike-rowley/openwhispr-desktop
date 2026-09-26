@@ -43,13 +43,14 @@ const COMPACT_CONTENT_GAP_PX = 6;
 
 // Mirrored by .liquid-cancel-skin[data-pill-state] in dictation-panel.css,
 // which redraws this chrome while the cancel skin owns the fused surface —
-// change together.
+// change together. The contents take --color-voice-pill (index.css); only an
+// unavailable mic keeps the muted tone, so it still reads as disabled.
 const STATE_APPEARANCE: Record<VoicePillState, string> = {
-  idle: "border-border-hover bg-surface-1 text-muted-foreground dark:border-border/50",
-  hover: "border-border-hover bg-surface-3 text-foreground",
-  recording: "border-border-hover bg-surface-1 text-foreground",
-  processing: "border-border/60 bg-surface-1 text-foreground/70",
-  thinking: "border-border/60 bg-surface-1 text-foreground",
+  idle: "border-border-hover bg-surface-1 text-voice-pill dark:border-border/50",
+  hover: "border-border-hover bg-surface-3 text-voice-pill",
+  recording: "border-border-hover bg-surface-1 text-voice-pill",
+  processing: "border-border/60 bg-surface-1 text-voice-pill/70",
+  thinking: "border-border/60 bg-surface-1 text-voice-pill",
   unavailable: "border-border/60 bg-surface-1 text-muted-foreground",
 };
 
@@ -149,7 +150,7 @@ export const VoicePill = forwardRef<HTMLDivElement, VoicePillProps>(function Voi
             agentMode={agentMode}
             className={cn(
               "transition-[width,height] duration-200",
-              state === "idle" && "text-foreground",
+              state === "idle" && "text-voice-pill",
               (isUnavailable || isProcessing) && "animate-pulse"
             )}
           />
@@ -176,7 +177,7 @@ export const VoicePill = forwardRef<HTMLDivElement, VoicePillProps>(function Voi
       />
 
       <div
-        className="voice-pill-waveform relative shrink-0 overflow-hidden text-foreground"
+        className="voice-pill-waveform relative shrink-0 overflow-hidden text-voice-pill"
         style={{
           width: showCompactPill ? 52 : 0,
           height: showCompactPill ? 24 : 32,

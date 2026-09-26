@@ -2,22 +2,22 @@ import { Fragment, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "./lib/utils";
 import { useUiLocale } from "../hooks/useUiLocale";
-import { Button } from "./ui/button";
 import { PAGE_CONTENT_WIDTH_CLASS } from "./ui/pageWidth";
-import { Loader2, Sparkles, X, Mic, Trash2, Archive } from "./icons";
+import { Loader2, Mic, Trash2, Archive } from "./icons";
 import TranscriptionItem from "./ui/TranscriptionItem";
 import EmptyStateCard from "./ui/EmptyStateCard";
 import type { TranscriptionItem as TranscriptionItemType } from "../types/electron";
 import { formatHotkeyLabel, parseHotkeyList } from "../utils/hotkeys";
 import { formatDateGroup } from "../utils/dateFormatting";
-import { useUpcomingEvents } from "../hooks/useUpcomingEvents";
-import UpcomingMeetings from "./UpcomingMeetings";
 import { useSettingsStore } from "../stores/settingsStore";
 import { effectiveLocalHistoryEnabled } from "../stores/policyRules";
 import { usePolicyStore } from "../stores/policyStore";
 
 const EMPTY_PREVIEW_WIDTHS = ["w-full", "w-4/5", "w-3/5"];
 
+// This fork drops the "Enable AI Enhancement" card and the upcoming-meetings
+// column (calendar sign-in needs OAuth client IDs only upstream's CI has). Their
+// props are still accepted so ControlPanel's wiring stays untouched.
 interface HistoryViewProps {
   history: TranscriptionItemType[];
   isLoading: boolean;
@@ -40,14 +40,10 @@ export default function HistoryView({
   history,
   isLoading,
   hotkey,
-  aiCTADismissed,
-  setAiCTADismissed,
-  useCleanupModel,
   copyToClipboard,
   deleteTranscription,
   clearAllTranscriptions,
   onOpenSettings,
-  onOpenIntegrations,
   onShowAudioInFolder,
   onRetryTranscription,
   showDiscarded,
@@ -59,7 +55,6 @@ export default function HistoryView({
   const dataRetentionEnabled = usePolicyStore((policyState) =>
     effectiveLocalHistoryEnabled(policyState, personalDataRetentionEnabled)
   );
-  const { events, isLoading: eventsLoading, isConnected } = useUpcomingEvents();
 
   const groupedHistory = useMemo(() => {
     if (history.length === 0) return [];
@@ -97,42 +92,6 @@ export default function HistoryView({
 
   return (
     <div className={cn(PAGE_CONTENT_WIDTH_CLASS, "px-6 pt-4 pb-6")}>
-      {!useCleanupModel && !aiCTADismissed && (
-        <div className="mb-3 relative rounded-lg border border-primary/20 bg-primary/5 dark:bg-primary/10 p-3">
-          <button
-            onClick={() => {
-              localStorage.setItem("aiCTADismissed", "true");
-              setAiCTADismissed(true);
-            }}
-            aria-label={t("common.close")}
-            className="absolute top-2 end-2 p-1 rounded-sm text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-          >
-            <X size={14} />
-          </button>
-          <div className="flex items-start gap-3 pe-6">
-            <div className="shrink-0 w-8 h-8 rounded-md bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
-              <Sparkles size={16} className="text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-foreground mb-0.5">
-                {t("controlPanel.aiCta.title")}
-              </p>
-              <p className="text-xs text-muted-foreground mb-2">
-                {t("controlPanel.aiCta.description")}
-              </p>
-              <Button
-                variant="default"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => onOpenSettings("intelligence")}
-              >
-                {t("controlPanel.aiCta.enable")}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="flex gap-8">
         <div className="min-w-0 flex-1">
           {!dataRetentionEnabled && (
@@ -224,15 +183,6 @@ export default function HistoryView({
               ))}
             </div>
           )}
-        </div>
-
-        <div className="hidden w-80 shrink-0 md:block">
-          <UpcomingMeetings
-            events={events}
-            isLoading={eventsLoading}
-            isConnected={isConnected}
-            onConnectCalendar={onOpenIntegrations}
-          />
         </div>
       </div>
     </div>

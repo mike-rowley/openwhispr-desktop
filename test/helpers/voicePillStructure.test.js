@@ -161,13 +161,13 @@ test("the collapsed Live Transcript pill transitions its logo into an expand che
   );
 });
 
-test("the idle pill keeps the logo at normal foreground strength", async () => {
+test("the idle pill keeps the logo at full accent strength", async () => {
   const idle = await renderPill("idle", false);
 
   assert.match(idle, /border-border-hover[^"\n]*dark:border-border\/50/);
   assert.match(
     idle,
-    /voice-identity-icon relative inline-block shrink-0 transition-\[width,height\] duration-200 text-foreground/
+    /voice-identity-icon relative inline-block shrink-0 transition-\[width,height\] duration-200 text-voice-pill/
   );
 });
 
@@ -175,7 +175,7 @@ test("the floating hover pill changes surface treatment without zooming", async 
   const footprint = await pillFootprints();
   const hovered = await renderPill("hover", false);
 
-  assert.match(hovered, /border-border-hover bg-surface-3 text-foreground/);
+  assert.match(hovered, /border-border-hover bg-surface-3 text-voice-pill/);
   assert.match(hovered, /box-shadow:var\(--shadow-card-hover-subtle\)/);
   assert.doesNotMatch(hovered, /style="[^"]*transform:/);
   assert.match(hovered, footprint.idle);
@@ -205,12 +205,12 @@ test("an interactive voice pill is keyboard focusable", async () => {
   assert.match(interactive, /tabindex="0"/);
 });
 
-test("the waveform uses foreground contrast, rounded caps, and a pronounced height range", async () => {
+test("the waveform uses the pill accent, rounded caps, and a pronounced height range", async () => {
   const recording = await renderPill("recording", true);
   const { WAVEFORM_BAR_MIN_PX, WAVEFORM_BAR_MAX_PX, resolveWaveformBarHeight } =
     await import("../../src/components/dictation/waveformMath.ts");
 
-  assert.match(recording, /relative shrink-0 overflow-hidden text-foreground/);
+  assert.match(recording, /relative shrink-0 overflow-hidden text-voice-pill/);
   assert.equal(
     (recording.match(/w-0\.5 rounded-full bg-current/g) || []).length,
     await totalWaveBars()

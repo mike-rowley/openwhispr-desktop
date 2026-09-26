@@ -80,14 +80,16 @@ export default function InferenceConfigEditor({
   const { modes, effectiveMode, isModeAllowed } = usePolicyModeOptions<InferenceModeOption>(
     (
       [
-        {
-          id: "openwhispr",
-          label: t(`${prefix}.openwhispr`),
-          description: t(`${prefix}.openwhisprDesc`),
-          icon: <Cloud className="w-4 h-4" />,
-          disabled: !isSignedIn,
-          badge: !isSignedIn ? t("common.freeAccountRequired") : undefined,
-        },
+        ...(isSignedIn
+          ? [
+              {
+                id: "openwhispr",
+                label: t(`${prefix}.openwhispr`),
+                description: t(`${prefix}.openwhisprDesc`),
+                icon: <Cloud className="w-4 h-4" />,
+              },
+            ]
+          : []),
         {
           id: "providers",
           label: t(`${prefix}.providers`),

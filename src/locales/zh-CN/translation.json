@@ -1896,7 +1896,10 @@
         "startPositionDescription": "语音录制面板在屏幕上的显示位置",
         "bottomRight": "右下角",
         "center": "底部居中",
-        "bottomLeft": "左下角"
+        "bottomLeft": "左下角",
+        "followCursor": "跟随光标",
+        "cursorOffset": "光标上方距离",
+        "cursorOffsetDescription": "听写时图标悬浮在鼠标指针上方的距离（像素）"
       },
       "hotkey": {
         "activationMode": "激活模式",

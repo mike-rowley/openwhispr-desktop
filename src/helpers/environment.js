@@ -41,6 +41,7 @@ const PERSISTED_KEYS = [
   "ACTIVATION_MODE",
   "FLOATING_ICON_AUTO_HIDE",
   "PANEL_START_POSITION",
+  "CURSOR_FOLLOW_OFFSET",
   "START_MINIMIZED",
   "UI_LANGUAGE",
   "WHISPER_CUDA_ENABLED",
@@ -457,12 +458,26 @@ class EnvironmentManager {
 
   getPanelStartPosition() {
     const v = this._getKey("PANEL_START_POSITION");
-    if (v === "bottom-right" || v === "center" || v === "bottom-left") return v;
+    if (v === "bottom-right" || v === "center" || v === "bottom-left" || v === "follow-cursor") {
+      return v;
+    }
     return "bottom-right";
   }
 
   savePanelStartPosition(position) {
     const result = this._saveKey("PANEL_START_POSITION", position);
+    this.saveAllKeysToEnvFile().catch(() => {});
+    return result;
+  }
+
+  // Raw string; WindowManager.setCursorFollowOffset clamps it and falls back
+  // to the default when it is blank or malformed.
+  getCursorFollowOffset() {
+    return this._getKey("CURSOR_FOLLOW_OFFSET");
+  }
+
+  saveCursorFollowOffset(offset) {
+    const result = this._saveKey("CURSOR_FOLLOW_OFFSET", String(offset));
     this.saveAllKeysToEnvFile().catch(() => {});
     return result;
   }
