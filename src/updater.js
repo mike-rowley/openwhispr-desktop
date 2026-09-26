@@ -31,10 +31,13 @@ class UpdateManager {
       return;
     }
 
+    // This fork's builds update only from the fork's own releases. Pointing
+    // at upstream would let an official release silently replace the fork's
+    // customizations.
     autoUpdater.setFeedURL({
       provider: "github",
-      owner: "OpenWhispr",
-      repo: "openwhispr",
+      owner: "mike-rowley",
+      repo: "openwhispr-desktop",
       private: false,
     });
 

@@ -276,8 +276,8 @@
   },
   "publish": {
     "provider": "github",
-    "owner": "OpenWhispr",
-    "repo": "openwhispr",
+    "owner": "mike-rowley",
+    "repo": "openwhispr-desktop",
     "private": false,
     "releaseType": "draft"
   }
