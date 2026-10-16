@@ -35,6 +35,10 @@ const SELECTION_EDIT_DETAIL_KEY_BY_CODE = {
   paste_failed: "pasteFailed",
 };
 const COMPANION_AUDIO_LEVEL_INTERVAL_MS = 80;
+// Fork: an empty cleanup reply almost always means a recording that was
+// started by mistake and stopped instead of cancelled. Such dictations are
+// dropped silently rather than pasted raw with a "Cleanup failed" toast.
+const CLEANUP_EMPTY_REPLY_MESSAGE_KEY = "hooks.audioRecording.errorDescriptions.cleanupEmptyReply";
 
 export const useAudioRecording = (toast, options = {}) => {
   const { t } = useTranslation();
@@ -598,6 +602,24 @@ export const useAudioRecording = (toast, options = {}) => {
               title: t("hooks.audioRecording.noAudio.title"),
               description: t("hooks.audioRecording.noAudio.description"),
             });
+            return;
+          }
+
+          if (
+            result.cleanupFailure?.messageKey === CLEANUP_EMPTY_REPLY_MESSAGE_KEY &&
+            !result.assistantConversation
+          ) {
+            // Nothing is pasted or shown, but history keeps the raw transcript in
+            // case the recording was real.
+            window.electronAPI?.hideDictationPreview?.();
+            logger.info("Dropped dictation with empty cleanup reply", {}, "audio");
+            await audioManagerRef.current
+              .saveTranscription(result.text, result.rawText ?? result.text, {
+                clientTranscriptionId: result.clientTranscriptionId,
+              })
+              .catch((error) =>
+                logger.error("Failed to persist transcription", { error: error?.message }, "audio")
+              );
             return;
           }
 
