@@ -195,20 +195,20 @@ export function DictationErrorCard({
     };
   }, [onPreferredHeightChange]);
 
+  const titleText = title && (
+    <p className={cn("text-base font-normal leading-snug text-foreground", onDismiss && "pe-7")}>
+      {title}
+    </p>
+  );
+  const descriptionText = description && (
+    <p className="mt-1 whitespace-pre-wrap text-sm leading-snug text-muted-foreground">
+      <ErrorDescription text={description} hotkey={descriptionHotkey} />
+    </p>
+  );
   const text = (
     <div className="min-w-0 flex-1 break-words px-2 py-1">
-      {title && (
-        <p
-          className={cn("text-base font-normal leading-snug text-foreground", onDismiss && "pe-7")}
-        >
-          {title}
-        </p>
-      )}
-      {description && (
-        <p className="mt-1 whitespace-pre-wrap text-sm leading-snug text-muted-foreground">
-          <ErrorDescription text={description} hotkey={descriptionHotkey} />
-        </p>
-      )}
+      {titleText}
+      {descriptionText}
     </div>
   );
 
@@ -266,10 +266,16 @@ export function DictationErrorCard({
           <X className="size-3.5" aria-hidden="true" />
         </button>
       )}
+      {/* Fork: the actions sit right under the title. The card scrolls inside a
+          small window, so buttons placed after a long description could end up
+          out of sight. */}
       {hasSecondaryAction ? (
         <div className="px-2 py-3">
-          {text}
-          <div className="mt-3 grid grid-cols-2 gap-2">{actions.map(renderAction)}</div>
+          <div className="min-w-0 break-words px-2 py-1">{titleText}</div>
+          <div className="my-2 grid grid-cols-2 gap-2">{actions.map(renderAction)}</div>
+          {descriptionText && (
+            <div className="min-w-0 break-words px-2 [&>p]:mt-0">{descriptionText}</div>
+          )}
         </div>
       ) : (
         <div className="flex items-center gap-2 px-2 py-3">
