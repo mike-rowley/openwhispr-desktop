@@ -886,7 +886,10 @@
         "description": "Local Whisper failed. Used OpenAI API instead."
       },
       "errorActions": {
-        "viewTranscript": "View Transcript"
+        "viewTranscript": "View Transcript",
+        "resendAudio": "Resend audio",
+        "resent": "Sent",
+        "resendFailed": "Resend failed"
       },
       "noAudio": {
         "title": "We didn’t catch that",

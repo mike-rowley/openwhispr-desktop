@@ -25,6 +25,7 @@ import { waitForVisualFrames } from "../utils/visualFrame";
 import { resolveLifecycleInputKind } from "../helpers/dictationRouting";
 import { createAssistantResponseDelivery } from "../helpers/assistantResponseDelivery";
 import { recordCleanupFailure } from "../stores/cleanupFailureStore";
+import { retryStoredTranscription } from "../helpers/retryStoredTranscription";
 
 // Maps a failed selection-replacement code to its `selectionEditing.*` toast
 // detail key; unlisted codes fall back to the generic "unavailable" message.
@@ -348,6 +349,58 @@ export const useAudioRecording = (toast, options = {}) => {
         audioManagerRef.current?.streamingPartialText
       ).trim() || fallback.trim();
 
+    // Fork: re-transcribes the failed dictation's stored audio and pastes the
+    // result. Resolves false (the card shows "Resend failed") when the audio
+    // was not kept or the retry fails again, so the user can try once more.
+    const resendFailedDictation = async (errorAt, errorGeneration) => {
+      const save = audioManagerRef.current?.lastFailedSave;
+      // The save starts right after (batch) or just before (streaming) the error
+      // is reported; anything older belongs to an earlier failure.
+      const id = save && save.startedAt >= errorAt - 60_000 ? await save.promise : null;
+      if (!id) {
+        logger.warn("Resend unavailable: failed dictation audio was not kept", {}, "audio");
+        return false;
+      }
+      let result;
+      try {
+        result = await retryStoredTranscription(id);
+      } catch (error) {
+        logger.warn("Resend of failed dictation threw", { error: error?.message }, "audio");
+        return false;
+      }
+      if (result.status !== "ok") {
+        logger.warn("Resend of failed dictation failed", { result }, "audio");
+        return false;
+      }
+      if (audioManagerRef.current?.lastFailedSave === save) {
+        audioManagerRef.current.lastFailedSave = null;
+      }
+      const text = result.transcription.text?.trim() ? result.transcription.text : "";
+      // A newer dictation or error owns the pill now; the text stays in history.
+      if (errorGeneration !== dictationErrorGenerationRef.current || startLockRef.current) {
+        return true;
+      }
+      dismissDictationError?.();
+      if (!text) return true;
+      const { autoPasteEnabled, keepTranscriptionInClipboard } = getSettings();
+      if (autoPasteEnabled) {
+        await audioManagerRef.current.safePaste(text, {
+          restoreClipboard: !keepTranscriptionInClipboard,
+          allowClipboardFallback: isAccessibilitySkipped(),
+        });
+      } else {
+        await window.electronAPI?.writeClipboard?.(text);
+      }
+      const cleanupError = result.cleanupError;
+      if (cleanupError && cleanupError.messageKey !== CLEANUP_EMPTY_REPLY_MESSAGE_KEY) {
+        recordCleanupFailure({
+          message: cleanupError.message,
+          ...(cleanupError.messageKey ? { messageKey: cleanupError.messageKey } : {}),
+        });
+      }
+      return true;
+    };
+
     const showDictationError = ({
       title,
       description,
@@ -355,6 +408,7 @@ export const useAudioRecording = (toast, options = {}) => {
       duration,
       code,
       settingsLaunchFailed = false,
+      resendable = false,
     }) => {
       const errorGeneration = ++dictationErrorGenerationRef.current;
       const recoverAssistant = Boolean(audioManagerRef.current?.voiceAgentRequested);
@@ -448,6 +502,19 @@ export const useAudioRecording = (toast, options = {}) => {
           onClick: () => performStartRecording(lastStartOptionsRef.current),
         },
       ];
+      if (resendable) {
+        const errorAt = Date.now();
+        actions.unshift({
+          label: t("hooks.audioRecording.errorActions.resendAudio"),
+          icon: "resend",
+          dismissOnClick: false,
+          feedback: {
+            successLabel: t("hooks.audioRecording.errorActions.resent"),
+            failureLabel: t("hooks.audioRecording.errorActions.resendFailed"),
+          },
+          onClick: () => resendFailedDictation(errorAt, errorGeneration),
+        });
+      }
 
       if (recoverableTranscript) {
         actions.push({
@@ -544,6 +611,9 @@ export const useAudioRecording = (toast, options = {}) => {
             duration: error?.code === "AUTH_EXPIRED" ? 8000 : undefined,
             code: error?.code,
             transcript: error?.transcript,
+            // A failed transcription keeps its recording (saveFailedTranscription),
+            // so the card can send that audio again instead of re-recording.
+            resendable: error?.title === "Transcription Error",
           });
         }
         if (getSettings().pauseMediaOnDictation) {

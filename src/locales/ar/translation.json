@@ -14,7 +14,10 @@
         "description": "فشل Whisper المحلي. تم استخدام OpenAI API بدلًا من ذلك."
       },
       "errorActions": {
-        "viewTranscript": "عرض النص المفرَّغ"
+        "viewTranscript": "عرض النص المفرَّغ",
+        "resendAudio": "إعادة إرسال الصوت",
+        "resent": "تم الإرسال",
+        "resendFailed": "فشلت إعادة الإرسال"
       },
       "noAudio": {
         "title": "لم نتمكن من التقاط الصوت",

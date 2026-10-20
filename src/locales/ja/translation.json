@@ -886,7 +886,10 @@
         "description": "ローカル Whisper が失敗しました。代わりに OpenAI API を使用しました。"
       },
       "errorActions": {
-        "viewTranscript": "文字起こしを表示"
+        "viewTranscript": "文字起こしを表示",
+        "resendAudio": "音声を再送信",
+        "resent": "送信済み",
+        "resendFailed": "再送信に失敗しました"
       },
       "noAudio": {
         "title": "聞き取れませんでした",

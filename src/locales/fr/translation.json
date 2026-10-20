@@ -886,7 +886,10 @@
         "description": "Whisper local a échoué. L'API OpenAI a pris le relais."
       },
       "errorActions": {
-        "viewTranscript": "Voir la transcription"
+        "viewTranscript": "Voir la transcription",
+        "resendAudio": "Renvoyer l’audio",
+        "resent": "Envoyé",
+        "resendFailed": "Échec du renvoi"
       },
       "noAudio": {
         "title": "Nous n’avons pas compris",

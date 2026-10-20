@@ -11,7 +11,7 @@ export interface TechnicalErrorDetailsData {
 
 export interface ToastActionConfig {
   label: string;
-  icon?: "retry" | "transcript" | "settings" | "copy";
+  icon?: "retry" | "resend" | "transcript" | "settings" | "copy";
   onClick: () => void | boolean | Promise<void | boolean>;
   feedback?: { successLabel: string; failureLabel: string };
   dismissOnClick?: boolean;

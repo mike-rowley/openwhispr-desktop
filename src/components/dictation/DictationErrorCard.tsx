@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { RotateCcw, ScrollText, Settings, Copy, Check, X } from "../icons";
+import { RotateCcw, Send, ScrollText, Settings, Copy, Check, X } from "../icons";
 import { ASSISTANT_PANEL_SIZE_LIMITS } from "../../helpers/voiceSurfaceGeometry.mjs";
 import { cn } from "../lib/utils";
 import type { ToastActionConfig } from "../ui/useToast";
@@ -20,6 +20,7 @@ interface DictationErrorCardProps {
 
 const ACTION_ICONS = {
   retry: RotateCcw,
+  resend: Send,
   transcript: ScrollText,
   settings: Settings,
   copy: Copy,

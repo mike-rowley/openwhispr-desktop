@@ -865,7 +865,10 @@
         "description": "O Whisper local falhou. A API da OpenAI foi usada no lugar."
       },
       "errorActions": {
-        "viewTranscript": "Ver transcrição"
+        "viewTranscript": "Ver transcrição",
+        "resendAudio": "Reenviar áudio",
+        "resent": "Enviado",
+        "resendFailed": "Falha ao reenviar"
       },
       "noAudio": {
         "title": "Não conseguimos entender",

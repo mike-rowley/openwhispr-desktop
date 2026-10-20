@@ -886,7 +886,10 @@
         "description": "本機 Whisper 失敗，已改用 OpenAI API。"
       },
       "errorActions": {
-        "viewTranscript": "查看轉錄"
+        "viewTranscript": "查看轉錄",
+        "resendAudio": "重新傳送音訊",
+        "resent": "已傳送",
+        "resendFailed": "重新傳送失敗"
       },
       "noAudio": {
         "title": "我們沒聽清楚",

@@ -4162,15 +4162,25 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
     }
   }
 
-  async saveFailedTranscription(errorMessage, errorCode = null, metadata = {}) {
+  // Fork: the dictation error card's Resend re-transcribes this row's stored
+  // audio. startedAt lets the card ignore a save left over from an older failure.
+  saveFailedTranscription(errorMessage, errorCode = null, metadata = {}) {
+    const promise = this._persistFailedTranscription(errorMessage, errorCode, metadata);
+    this.lastFailedSave = { startedAt: Date.now(), promise };
+    return promise;
+  }
+
+  /** Resolves to the saved row's id when its audio was stored, otherwise null. */
+  async _persistFailedTranscription(errorMessage, errorCode, metadata) {
     const { dataRetentionEnabled, audioRetentionDays } = getEffectiveRetentionPreferences();
     if (!dataRetentionEnabled) {
       logger.debug("Skipping failed transcription save — data retention disabled", {}, "audio");
       this.lastAudioBlob = null;
       this.lastAudioMetadata = null;
-      return;
+      return null;
     }
 
+    let audioSavedId = null;
     try {
       const result = await window.electronAPI.saveTranscription("", null, {
         status: "failed",
@@ -4195,6 +4205,7 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
               provider: null,
               model: null,
             });
+            audioSavedId = result.id;
           } catch (audioErr) {
             logger.warn(
               "Failed to save audio for failed transcription",
@@ -4217,6 +4228,7 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
         "audio"
       );
     }
+    return audioSavedId;
   }
 
   async saveDiscardedTranscription(blob, durationSeconds, analyticsOccurredAt = null) {

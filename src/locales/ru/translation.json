@@ -886,7 +886,10 @@
         "description": "Локальный Whisper не сработал. Использован OpenAI API."
       },
       "errorActions": {
-        "viewTranscript": "Показать расшифровку"
+        "viewTranscript": "Показать расшифровку",
+        "resendAudio": "Отправить аудио снова",
+        "resent": "Отправлено",
+        "resendFailed": "Не удалось отправить"
       },
       "noAudio": {
         "title": "Мы не расслышали",

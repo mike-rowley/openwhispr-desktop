@@ -1,9 +1,5 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
-const vm = require("node:vm");
-const ts = require("typescript");
 const { createRendererServer, installBrowserGlobals } = require("../lib/rendererTestHarness");
 
 const RAW = "um so can you uh send me the report by friday";
@@ -117,62 +113,18 @@ test("cleanup validates completed provider output using the request's prompt set
     window.electronAPI.retryTranscription = async () => ({ success: true, transcription: row });
     window.electronAPI.updateTranscriptionText = async () =>
       assert.fail("rejected cleanup must not overwrite the row");
-    const source = fs.readFileSync(
-      path.resolve(__dirname, "../../src/components/ControlPanel.tsx"),
-      "utf8"
+    useSettingsStore.setState({ useCleanupModel: true });
+    // History's Re-transcribe (and the dictation error card's Resend) both run
+    // through this helper; the caller turns cleanupError into the toast.
+    const { retryStoredTranscription } = await vite.ssrLoadModule(
+      "/helpers/retryStoredTranscription.ts"
     );
-    const parsed = ts.createSourceFile(
-      "ControlPanel.tsx",
-      source,
-      ts.ScriptTarget.Latest,
-      true,
-      ts.ScriptKind.TSX
-    );
-    let callback;
-    const visit = (node) => {
-      if (ts.isVariableDeclaration(node) && node.name.getText(parsed) === "retryTranscription") {
-        callback = node.initializer.arguments[0].getText(parsed);
-      }
-      ts.forEachChild(node, visit);
-    };
-    visit(parsed);
-    assert.ok(callback, "the history retry callback must be present");
-    // Execute the real callback without mounting the whole application shell.
-    const code = ts.transpileModule(`const retry = ${callback};`, {
-      compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
-    }).outputText;
-    const settingsModule = await vite.ssrLoadModule("/stores/settingsStore.ts");
-    const toasts = [];
-    let displayedRow;
-    const retry = vm.runInNewContext(`${code}\nretry`, {
-      require: (id) => {
-        if (id === "../services/ReasoningService") return { __esModule: true, default: service };
-        if (id === "../stores/settingsStore") return settingsModule;
-        throw new Error(`Unexpected history retry import: ${id}`);
-      },
-      window,
-      getSettings: settingsModule.getSettings,
-      getManagedTranscriptionResolution: () => null,
-      isTranscriptionContextAllowed: () => true,
-      usePolicyStore,
-      useCleanupModel: true,
-      getAgentName: () => "OpenWhispr",
-      hasTextContent: (text) => typeof text === "string" && text.trim().length > 0,
-      applyChineseScript: async (text) => text,
-      resolveChineseScriptTarget: () => null,
-      updateInStore: (value) => {
-        displayedRow = value;
-      },
-      toast: (value) => toasts.push(value),
-      t: (key) => key,
-    });
-    await retry(row.id);
-    assert.strictEqual(displayedRow, row);
-    assert.ok(
-      toasts.some(
-        (toast) => toast.description === "hooks.audioRecording.errorDescriptions.cleanupDuplicated"
-      ),
-      JSON.stringify(toasts)
+    const result = await retryStoredTranscription(row.id);
+    assert.equal(result.status, "ok", JSON.stringify(result));
+    assert.strictEqual(result.transcription, row);
+    assert.equal(
+      result.cleanupError?.messageKey,
+      "hooks.audioRecording.errorDescriptions.cleanupDuplicated"
     );
   });
 });

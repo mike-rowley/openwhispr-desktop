@@ -886,7 +886,10 @@
         "description": "Lokales Whisper ist fehlgeschlagen. Stattdessen wurde die OpenAI API verwendet."
       },
       "errorActions": {
-        "viewTranscript": "Transkript anzeigen"
+        "viewTranscript": "Transkript anzeigen",
+        "resendAudio": "Audio erneut senden",
+        "resent": "Gesendet",
+        "resendFailed": "Senden fehlgeschlagen"
       },
       "noAudio": {
         "title": "Das haben wir nicht verstanden",
