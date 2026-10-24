@@ -117,6 +117,7 @@ import {
   matchesDictionaryPrompt,
   payloadSendsDictionaryBias,
 } from "../utils/dictionaryEchoFilter.js";
+import { stripWhisperOutro, WHISPER_OUTRO_ONLY_CODE } from "../utils/whisperOutroFilter.js";
 import { dictionaryPromptLimit, trimDictionaryPrompt } from "../utils/dictionaryPromptCap.js";
 import {
   dictionaryKeywordOverflow,
@@ -784,6 +785,25 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
         text
       )
     );
+  }
+
+  // Fork: strips Whisper's hallucinated subtitle outro ("Thanks for watching!") from a
+  // cloud transcript; see whisperOutroFilter.js. A transcript that was nothing but
+  // the outro came from a silent recording, so it is reported as one.
+  _withoutWhisperOutro(text, source) {
+    const stripped = stripWhisperOutro(text);
+    if (stripped === text) return text;
+    logger.info(
+      "Removed hallucinated Whisper outro",
+      { source, removed: text.slice(stripped.length).trim() },
+      "transcription"
+    );
+    if (!stripped.trim()) {
+      // Same message as silence so every path treats it as no speech; the code
+      // makes transcriptionFailureOutcome drop it without a "didn't catch that" card.
+      throw Object.assign(new Error("No audio detected"), { code: WHISPER_OUTRO_ONLY_CODE });
+    }
+    return stripped;
   }
 
   // Check the dictionary on its own as well as the full prompt: the echo filter needs
@@ -3410,6 +3430,7 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
     });
     timings.transcriptionProcessingDurationMs = Math.round(performance.now() - transcriptionStart);
 
+    result.text = this._withoutWhisperOutro(result.text, "openwhispr");
     const rawText = result.text;
     if (this.isDictionaryEcho(rawText)) {
       throw dictionaryEchoError();
@@ -3642,10 +3663,10 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
           if (result.messageKey) err.messageKey = result.messageKey;
           throw err;
         }
-        const proxyText = result?.text;
-        if (!proxyText?.trim()) {
+        if (!result?.text?.trim()) {
           throw new Error(`No text transcribed - ${proxySpec.displayName} response was empty`);
         }
+        const proxyText = this._withoutWhisperOutro(result.text, providerName);
         if (payloadSendsDictionaryBias(proxyPayload) && this.isDictionaryEcho(proxyText)) {
           throw dictionaryEchoError();
         }
@@ -3896,6 +3917,7 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
         );
       }
 
+      if (result.text) result.text = this._withoutWhisperOutro(result.text, provider);
       // Check for text - handle both empty string and missing field
       if (result.text && result.text.trim().length > 0) {
         if (this.isDictionaryEcho(result.text)) {

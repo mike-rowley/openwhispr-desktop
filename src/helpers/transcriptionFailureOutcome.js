@@ -1,4 +1,5 @@
 import { DICTIONARY_ECHO_CODE } from "../utils/dictionaryEchoFilter.js";
+import { WHISPER_OUTRO_ONLY_CODE } from "../utils/whisperOutroFilter.js";
 
 // How a transcription failure ends, for batch recordings and re-uploaded
 // streaming ones alike. Silence is not reported. A transcript discarded as an
@@ -6,6 +7,10 @@ import { DICTIONARY_ECHO_CODE } from "../utils/dictionaryEchoFilter.js";
 // silence, but its recording is kept for a manual retry like any real
 // failure's, or the utterance vanishes (#1547).
 export const transcriptionFailureOutcome = (error) => {
+  // Fork: a recording Whisper heard only its subtitle outro in is ignored entirely.
+  if (error.code === WHISPER_OUTRO_ONLY_CODE) {
+    return { noAudio: false, keepAudio: false, report: null };
+  }
   if (error.code === DICTIONARY_ECHO_CODE || error.code === "NO_SPEECH_DETECTED") {
     return { noAudio: true, keepAudio: true, report: null };
   }
