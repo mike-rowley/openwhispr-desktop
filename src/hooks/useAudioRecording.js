@@ -26,6 +26,7 @@ import { resolveLifecycleInputKind } from "../helpers/dictationRouting";
 import { createAssistantResponseDelivery } from "../helpers/assistantResponseDelivery";
 import { recordCleanupFailure } from "../stores/cleanupFailureStore";
 import { retryStoredTranscription } from "../helpers/retryStoredTranscription";
+import { scrubSubtitleCredits, stripWhisperOutro } from "../utils/whisperOutroFilter.js";
 
 // Maps a failed selection-replacement code to its `selectionEditing.*` toast
 // detail key; unlisted codes fall back to the generic "unavailable" message.
@@ -375,7 +376,8 @@ export const useAudioRecording = (toast, options = {}) => {
       if (audioManagerRef.current?.lastFailedSave === save) {
         audioManagerRef.current.lastFailedSave = null;
       }
-      const text = result.transcription.text?.trim() ? result.transcription.text : "";
+      const resent = stripWhisperOutro(result.transcription.text || "");
+      const text = resent?.trim() ? resent : "";
       // A newer dictation or error owns the pill now; the text stays in history.
       if (errorGeneration !== dictationErrorGenerationRef.current || startLockRef.current) {
         return true;
@@ -664,6 +666,19 @@ export const useAudioRecording = (toast, options = {}) => {
         if (result.success) {
           dictationErrorGenerationRef.current += 1;
           dismissDictationError?.();
+          // Fork: a subtitle credit is never pasted, whichever provider, cleanup or
+          // translation step let it through. Nothing left means a silent recording.
+          if (typeof result.text === "string" && !result.assistantConversation) {
+            const scrubbed = scrubSubtitleCredits(result.text);
+            if (scrubbed !== result.text) {
+              logger.info("Removed subtitle credit before paste", {}, "audio");
+              if (!scrubbed.trim()) {
+                window.electronAPI?.hideDictationPreview?.();
+                return;
+              }
+              result.text = scrubbed;
+            }
+          }
           const transcribedText = result.text?.trim();
 
           if (!transcribedText) {

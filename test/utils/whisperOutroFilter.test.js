@@ -1,6 +1,45 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { stripWhisperOutro } = require("../../src/utils/whisperOutroFilter.js");
+const {
+  stripWhisperOutro,
+  scrubSubtitleCredits,
+} = require("../../src/utils/whisperOutroFilter.js");
+
+test("the Amara.org subtitle credit is removed wherever it appears", () => {
+  // The form that leaked through fork.5: appended with no punctuation (#3923).
+  assert.equal(
+    stripWhisperOutro(
+      "using characters and sets that we've generated Subtitles by the Amara.org community"
+    ),
+    "using characters and sets that we've generated"
+  );
+  assert.equal(
+    stripWhisperOutro("that we've generated. Subtitles by the Amara.org community."),
+    "that we've generated."
+  );
+  assert.equal(
+    scrubSubtitleCredits("First part. Subtitles by the Amara.org community. Second part."),
+    "First part. Second part."
+  );
+  assert.equal(scrubSubtitleCredits("Done (subtitles by the amara.org community)"), "Done");
+  for (const only of [
+    "Subtitles by the Amara.org community",
+    " Subtitles by the Amara.org community.",
+    '"Subtitles by the Amara.org community"',
+    "Subtitles by the Amara.org community Subtitles by the Amara.org community",
+  ]) {
+    assert.equal(stripWhisperOutro(only), "", only);
+  }
+  assert.equal(scrubSubtitleCredits("No credit here."), "No credit here.");
+});
+
+test("a capitalised outro appended with no punctuation is removed", () => {
+  assert.equal(
+    stripWhisperOutro("then run a 2X Fiends 1 preset Thanks for watching!"),
+    "then run a 2X Fiends 1 preset"
+  );
+  assert.equal(stripWhisperOutro("that is the plan Thank you for watching"), "that is the plan");
+});
 
 test("a hallucinated outro sentence is removed from the end", () => {
   assert.equal(
